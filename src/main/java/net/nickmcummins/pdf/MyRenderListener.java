@@ -10,11 +10,15 @@ import java.util.List;
 
 public class MyRenderListener implements RenderListener {
     private final String filename;
-    public final List<TextItem> textItems;
+    private final List<TextItem> textItems;
 
     public MyRenderListener(String filename) {
         this.filename = filename;
         this.textItems = new ArrayList<>();
+    }
+
+    public MyRenderListener() {
+        this(null);
     }
 
     @Override
@@ -38,5 +42,9 @@ public class MyRenderListener implements RenderListener {
     @Override
     public void renderImage(ImageRenderInfo imageRenderInfo) {
 
+    }
+
+    public List<TextItem> getTextItems() {
+        return textItems;
     }
 }
