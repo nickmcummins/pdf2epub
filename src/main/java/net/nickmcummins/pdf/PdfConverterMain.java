@@ -2,6 +2,7 @@ package net.nickmcummins.pdf;
 
 import com.itextpdf.text.pdf.PdfReader;
 import com.itextpdf.text.pdf.parser.*;
+import net.nickmcummins.pdf.output.HtmlOutputWriter;
 import net.nickmcummins.pdf.page.PdfPage;
 import org.mabb.fontverter.pdf.PdfFontExtractor;
 
@@ -19,6 +20,9 @@ public class PdfConverterMain {
 
         PdfPage pdfPage = new PdfPage(parser, 1);
         pdfPage.printLines();
+
+        HtmlOutputWriter htmlOutputWriter = new HtmlOutputWriter(pdfPage);
+        htmlOutputWriter.writeToFile();
 
         reader.close();
     }

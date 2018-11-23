@@ -22,10 +22,12 @@ import static net.nickmcummins.pdf.StringUtils.removeWhitespaces;
 
 public class PdfPage {
     private static final BigDecimal UNSET_LINE_GAP = BigDecimal.ZERO;
+    private PdfReaderContentParser parser;
     private Map<String, String> whitespaceRemovedStringsToString;
     private List<FormattedTextLine> lines;
 
     public PdfPage(PdfReaderContentParser parser, int pageNumber) throws IOException {
+        this.parser = parser;
         this.whitespaceRemovedStringsToString = buildWhitespaceRemovedStringsMappings(parser, pageNumber);
         this.lines = combineContinuous(buildTextLines(parser, pageNumber));
     }
@@ -85,7 +87,7 @@ public class PdfPage {
                 currentLineCombiner.append(" ");
                 currentLineCombiner.append(currentLine.getDisplayText());
             } else {
-                currentLineCombiner.append(format("\t[%s %s\t%s->%s]",  currentFontFamily, currentFontSize.toString(), previousLineGap, currentLineGap));
+                //currentLineCombiner.append(format("\t[%s %s\t%s->%s]",  currentFontFamily, currentFontSize.toString(), previousLineGap, currentLineGap));
                 combinedLines.add(new FormattedTextLine(currentLineCombiner.toString(), currentFontFamily, currentFontSize));
                 currentLineCombiner = new StringBuilder();
                 currentLineCombiner.append(currentLine.getDisplayText());
@@ -110,5 +112,9 @@ public class PdfPage {
         for (FormattedTextLine formattedTextLine : lines) {
             System.out.println(formattedTextLine.getDisplayText());
         }
+    }
+
+    public PdfReaderContentParser getParser() {
+        return parser;
     }
 }
