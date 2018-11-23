@@ -21,15 +21,15 @@ import static java.util.stream.Collectors.groupingBy;
 import static net.nickmcummins.pdf.StringUtils.removeWhitespaces;
 
 public class PdfPage {
-    private List<FormattedTextLine> lines;
     private Map<String, String> whitespaceRemovedStringsToString;
+    private List<FormattedTextLine> lines;
 
     public PdfPage(PdfReaderContentParser parser, int pageNumber) throws IOException {
-        this.lines = buildTextLines(parser, pageNumber);
         this.whitespaceRemovedStringsToString = buildWhitespaceRemovedStringsMappings(parser, pageNumber);
+        this.lines = buildTextLines(parser, pageNumber);
     }
 
-    private static List<FormattedTextLine> buildTextLines(PdfReaderContentParser parser, int pageNumber) throws IOException {
+    private List<FormattedTextLine> buildTextLines(PdfReaderContentParser parser, int pageNumber) throws IOException {
         MyRenderListener renderListener = parser.processContent(pageNumber, new MyRenderListener());
         List<TextItem> pageTextItems = renderListener.getTextItems();
 
@@ -39,7 +39,15 @@ public class PdfPage {
         sort(linePositions);
         List<FormattedTextLine> formattedTextLines = new ArrayList<>(lines.size());
         for (BigDecimal linePosition : linePositions) {
-            formattedTextLines.add(new FormattedTextLine(lines.get(linePosition)));
+            FormattedTextLine formattedTextLine = new FormattedTextLine(lines.get(linePosition));
+            String fontLabel = format("\t[%s %.2f]",  formattedTextLine.getFontFamilyName(), formattedTextLine.getFontSize());
+            String whitespaceRemovedString = removeWhitespaces(formattedTextLine.getFormattedText());
+            if (whitespaceRemovedStringsToString.containsKey(whitespaceRemovedString))
+                formattedTextLine.setDisplayText(whitespaceRemovedStringsToString.get(whitespaceRemovedString) + fontLabel);
+            else
+                formattedTextLine.setDisplayText(formattedTextLine.getFormattedText() + fontLabel);
+
+            formattedTextLines.add(formattedTextLine);
         }
 
         return formattedTextLines;
@@ -56,12 +64,7 @@ public class PdfPage {
 
     public void printLines() {
         for (FormattedTextLine formattedTextLine : lines) {
-            String fontLabel = format("\t[%s %.2f]",  formattedTextLine.getFontFamilyName(), formattedTextLine.getFontSize());
-            String whitespaceRemovedString = removeWhitespaces(formattedTextLine.toString());
-            if (whitespaceRemovedStringsToString.containsKey(whitespaceRemovedString))
-                System.out.println(whitespaceRemovedStringsToString.get(whitespaceRemovedString) + fontLabel);
-            else
-                System.out.println(formattedTextLine.toString() + fontLabel);
+            System.out.println(formattedTextLine.getDisplayText());
         }
     }
 }
