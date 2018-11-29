@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.stream.Collectors;
 
 import static java.lang.String.format;
+import static net.nickmcummins.pdf.font.FontUtils.getFontOrEquivalent;
 
 public class HtmlOutputWriter {
     private static final int HEADER_LENGTH_CUTOFF = 50;
@@ -50,7 +51,7 @@ public class HtmlOutputWriter {
             String fontSizeKey = (String)multiKey.getKeys()[1];
             String className = (String)stylesMap.get(fontNameKey, fontSizeKey);
             sb.append(format("\n.%s {\n", className));
-            sb.append(format("\tfont-family: \"%s\";\n", fontNameKey));
+            sb.append(format("\tfont-family: \"%s\";\n", getFontOrEquivalent(fontNameKey)));
             sb.append(format("\tfont-size: %spt;\n", fontSizeKey));
             sb.append("}\n");
         }

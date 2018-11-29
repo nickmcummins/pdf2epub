@@ -15,6 +15,7 @@ public class PdfConverterMain {
         PdfFontExtractor fontExtractor = new PdfFontExtractor();
         fontExtractor.extractFontsToDir(new File(filename), containingDir(filename) + "/fonts");
 
+
         PdfReader reader = new PdfReader(filename);
         PdfReaderContentParser parser = new PdfReaderContentParser(reader);
 

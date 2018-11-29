@@ -22,7 +22,7 @@ public class TextItem implements Comparable<TextItem> {
         this.fontFamilyName = String.join("", textRenderInfo.getFont().getFamilyFontName()[0]);
         this.x = new BigDecimal(textRenderInfo.getTextToUserSpaceTransformMatrix().get(6)).setScale(2, RoundingMode.FLOOR);
         this.y = new BigDecimal(textRenderInfo.getTextToUserSpaceTransformMatrix().get(7) * -1).setScale(2, RoundingMode.FLOOR);
-        this.fontSize = BigDecimal.valueOf(textRenderInfo.getTextToUserSpaceTransformMatrix().get(0)).setScale(3, RoundingMode.DOWN);
+        this.fontSize = BigDecimal.valueOf(textRenderInfo.getTextToUserSpaceTransformMatrix().get(0)).setScale(0, RoundingMode.CEILING);
         this.width = ColumnText.getWidth(new Phrase(getText(), new Font(Font.FontFamily.HELVETICA, getFontSize().floatValue())));
     }
 
