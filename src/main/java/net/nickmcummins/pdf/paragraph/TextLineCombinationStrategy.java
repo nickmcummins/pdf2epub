@@ -4,6 +4,6 @@ import net.nickmcummins.pdf.page.FormattedTextLine;
 
 import java.util.List;
 
-public interface TextLineCombiner {
+public interface TextLineCombinationStrategy {
     List<FormattedTextLine> combine(List<FormattedTextLine> formattedTextLines);
 }

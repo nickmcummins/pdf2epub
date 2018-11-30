@@ -1,5 +1,7 @@
 package net.nickmcummins.pdf.page;
 
+import net.nickmcummins.pdf.line.SimpleTextLineBuilderStrategy;
+
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -13,32 +15,26 @@ public class FormattedTextLine {
     private BigDecimal fontSize;
     private BigDecimal x;
     private BigDecimal y;
+    private BigDecimal minX;
+    private BigDecimal maxX;
 
     public FormattedTextLine(List<TextItem> lineItems) {
         sort(lineItems);
         this.lineItems = lineItems;
-        this.formattedText = buildFormattedText();
+        this.formattedText = new SimpleTextLineBuilderStrategy().buildFormattedText(lineItems);
+
+        this.x = lineItems.get(0).getX();
+        this.y = lineItems.get(0).getY();
+        this.minX = lineItems.get(0).getX();
+        this.maxX = lineItems.get(lineItems.size() - 1).getX();
+        this.fontFamilyName = lineItems.get(0).getFontFamilyName();
+        this.fontSize = lineItems.get(0).getFontSize();
     }
 
     public FormattedTextLine(String displayText, String fontFamilyName, BigDecimal fontSize) {
         this.displayText = displayText;
         this.fontFamilyName = fontFamilyName;
         this.fontSize = fontSize;
-    }
-
-    private String buildFormattedText() {
-        StringBuilder sb = new StringBuilder();
-        for (TextItem textItem : lineItems) {
-            if (x == null) {
-                x = textItem.getX();
-                y = textItem.getY();
-                fontFamilyName = textItem.getFontFamilyName();
-                fontSize = textItem.getFontSize();
-            }
-            sb.append(textItem.getText());
-        }
-
-        return sb.toString();
     }
 
     public String getFormattedText() {
@@ -65,7 +61,16 @@ public class FormattedTextLine {
         return y;
     }
 
+    public BigDecimal getMinX() {
+        return minX;
+    }
+
+    public BigDecimal getMaxX() {
+        return maxX;
+    }
+
     public String toString() {
         return displayText;
     }
+
 }

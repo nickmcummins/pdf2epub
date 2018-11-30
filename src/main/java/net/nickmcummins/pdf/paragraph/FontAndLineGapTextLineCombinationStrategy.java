@@ -8,7 +8,7 @@ import java.util.List;
 
 import static java.lang.String.format;
 
-public class FontAndLineGapTextLineCombiner implements TextLineCombiner {
+public class FontAndLineGapTextLineCombinationStrategy implements TextLineCombinationStrategy {
     private static final BigDecimal UNSET_LINE_GAP = BigDecimal.ZERO;
 
     @Override

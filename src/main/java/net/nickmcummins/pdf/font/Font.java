@@ -12,4 +12,8 @@ public class Font {
     public Font(String fontFamilyName) {
         this(fontFamilyName, FontStyle.Normal);
     }
+
+    public String toString() {
+        return fontFamilyName;
+    }
 }

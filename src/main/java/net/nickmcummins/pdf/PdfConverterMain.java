@@ -12,14 +12,17 @@ import java.nio.file.Paths;
 
 public class PdfConverterMain {
     private static void convertPdfToHtml(String filename) throws IOException {
-        PdfFontExtractor fontExtractor = new PdfFontExtractor();
-        fontExtractor.extractFontsToDir(new File(filename), containingDir(filename) + "/fonts");
-
+        try {
+            PdfFontExtractor fontExtractor = new PdfFontExtractor();
+            fontExtractor.extractFontsToDir(new File(filename), containingDir(filename) + "/fonts");
+        } catch (Exception e) {
+            System.out.println("Exception extracting fonts: " + e);
+        }
 
         PdfReader reader = new PdfReader(filename);
         PdfReaderContentParser parser = new PdfReaderContentParser(reader);
 
-        PdfPage pdfPage = new PdfPage(parser, 1);
+        PdfPage pdfPage = new PdfPage(parser, 5);
         pdfPage.printLines();
 
         HtmlOutputWriter htmlOutputWriter = new HtmlOutputWriter(pdfPage);
