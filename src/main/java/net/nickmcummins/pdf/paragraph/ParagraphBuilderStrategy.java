@@ -1,5 +1,6 @@
 package net.nickmcummins.pdf.paragraph;
 
+import net.nickmcummins.pdf.line.LineRange;
 import net.nickmcummins.pdf.page.FormattedTextLine;
 import net.nickmcummins.pdf.page.TextItem;
 
@@ -13,17 +14,36 @@ public class ParagraphBuilderStrategy {
 
 
     private TreeMap<BigDecimal, List<TextItem>> moveInterlineTextItems(TreeMap<BigDecimal, List<TextItem>> sortedLines) {
-        List<Double> lineGapsFromPrevious = new ArrayList<>();
-        lineGapsFromPrevious.add(0.0);
+        List<Double> lineGaps = new ArrayList<>();
+        lineGaps.add(0.0);
 
         BigDecimal previousLineY = sortedLines.firstKey();
 
         for (BigDecimal currentLineY : sortedLines.navigableKeySet()) {
             if (currentLineY.equals(previousLineY)) continue;
             double gapFromPrevious = currentLineY.doubleValue() - previousLineY.doubleValue();
-            lineGapsFromPrevious.add(gapFromPrevious);
+            lineGaps.add(gapFromPrevious);
             previousLineY = currentLineY;
         }
+
+        List<LineRange> lineRanges = new ArrayList<>();
+        LineRange currentLineRange = new LineRange(0);
+
+        for (int i = 1; i < lineGaps.size() - 1; i++) {
+            if (Math.abs(lineGaps.get(i) - lineGaps.get(i + 1)) < 0.2) {
+                continue;
+            } else if (i != lineGaps.size() - 2
+                    && Math.abs(lineGaps.get(i) - (lineGaps.get(i + 1) + lineGaps.get(i + 2))) < 0.2) {
+                continue;
+            } else {
+                currentLineRange.setEndLine(i);
+                lineRanges.add(currentLineRange);
+                currentLineRange = new LineRange(i + 1);
+            }
+        }
+
+        currentLineRange.setEndLine(lineGaps.size() - 1);
+        lineRanges.add(currentLineRange);
 
         return sortedLines;
     }
