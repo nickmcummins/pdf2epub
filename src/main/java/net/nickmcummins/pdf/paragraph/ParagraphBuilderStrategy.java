@@ -5,8 +5,11 @@ import net.nickmcummins.pdf.page.FormattedTextLine;
 import net.nickmcummins.pdf.page.TextItem;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static java.util.Collections.sort;
 
 public class ParagraphBuilderStrategy {
     private static final String UNSET_FONT_FAMILY = "";
@@ -15,7 +18,6 @@ public class ParagraphBuilderStrategy {
 
     private TreeMap<BigDecimal, List<TextItem>> moveInterlineTextItems(TreeMap<BigDecimal, List<TextItem>> sortedLines) {
         List<Double> lineGaps = new ArrayList<>();
-        lineGaps.add(0.0);
 
         BigDecimal previousLineY = sortedLines.firstKey();
 
@@ -26,26 +28,72 @@ public class ParagraphBuilderStrategy {
             previousLineY = currentLineY;
         }
 
+        BigDecimal[] linePositions = sortedLines.navigableKeySet().toArray(new BigDecimal[0]);
         List<LineRange> lineRanges = new ArrayList<>();
         LineRange currentLineRange = new LineRange(0);
+        TreeMap<BigDecimal, List<TextItem>> combinedSortedLines = new TreeMap<>();
 
-        for (int i = 1; i < lineGaps.size() - 1; i++) {
-            if (Math.abs(lineGaps.get(i) - lineGaps.get(i + 1)) < 0.2) {
-                continue;
-            } else if (i != lineGaps.size() - 2
-                    && Math.abs(lineGaps.get(i) - (lineGaps.get(i + 1) + lineGaps.get(i + 2))) < 0.2) {
-                continue;
+        int currentLineNumber = 0;
+        while (currentLineNumber <= lineGaps.size()) {
+            BigDecimal currentLinePosition = linePositions[currentLineNumber];
+            if (currentLineNumber < lineGaps.size() - 1
+                    && Math.abs(lineGaps.get(currentLineNumber) - lineGaps.get(currentLineNumber + 1)) < 0.2) {
+                currentLineRange.setLineGap(new BigDecimal(lineGaps.get(currentLineNumber)).setScale(2, RoundingMode.FLOOR));
+                combinedSortedLines.put(currentLinePosition, combinedSortedLines.get(currentLinePosition));
+                currentLineNumber += 1;
+
+
+            } else if (currentLineNumber < lineGaps.size() - 2
+                    && ((Math.abs(lineGaps.get(currentLineNumber + 2) - (lineGaps.get(currentLineNumber) + lineGaps.get(currentLineNumber + 1))) < 0.2)
+                        || (Math.abs(lineGaps.get(currentLineNumber) - (lineGaps.get(currentLineNumber + 1) + lineGaps.get(currentLineNumber + 2)))) < 0.2)) {
+                List<TextItem> firstLine = sortedLines.get(currentLinePosition);
+                BigDecimal secondLinePosition = linePositions[currentLineNumber + 1];
+                BigDecimal thirdLinePosition = linePositions[currentLineNumber + 2];
+
+                List<TextItem> secondLine = sortedLines.get(secondLinePosition);
+                List<TextItem> thirdLine = sortedLines.get(thirdLinePosition);
+                System.out.println();
+                currentLineNumber += 3;
             } else {
-                currentLineRange.setEndLine(i);
+                currentLineRange.setEndLine(currentLineNumber);
                 lineRanges.add(currentLineRange);
-                currentLineRange = new LineRange(i + 1);
+                currentLineRange = new LineRange(currentLineNumber + 1);
+                currentLineNumber += 1;
             }
         }
 
-        currentLineRange.setEndLine(lineGaps.size() - 1);
-        lineRanges.add(currentLineRange);
 
-        return sortedLines;
+        int actualLinePositionIdx = 0;
+        List<BigDecimal> combinedLinePositions = new ArrayList<>();
+        for (LineRange lineRange : lineRanges) {
+            if (lineRange.getStartLine() == lineRange.getEndLine()) {
+                BigDecimal linePosition = linePositions[lineRange.getStartLine()];
+                combinedLinePositions.add(linePosition);
+                combinedSortedLines.put(linePosition, sortedLines.get(linePosition));
+                actualLinePositionIdx++;
+            } else {
+                for (BigDecimal calculatedLinePosition = linePositions[lineRange.getStartLine()];
+                     Math.abs(calculatedLinePosition.doubleValue() - linePositions[lineRange.getEndLine()].doubleValue()) > 0.2;
+                     calculatedLinePosition = calculatedLinePosition.add(lineRange.getLineGap())) {
+                    List<TextItem> combinedLinesTextItems = new ArrayList<>();
+                    while (Math.abs(linePositions[actualLinePositionIdx].subtract(calculatedLinePosition).doubleValue()) > 0.2) {
+                        combinedLinesTextItems.addAll(sortedLines.get(linePositions[actualLinePositionIdx]));
+                        actualLinePositionIdx++;
+                    }
+
+                    combinedLinesTextItems.addAll(sortedLines.get(linePositions[actualLinePositionIdx]));
+                    sort(combinedLinesTextItems);
+                    combinedLinePositions.add(linePositions[actualLinePositionIdx]);
+                    combinedSortedLines.put(linePositions[actualLinePositionIdx], combinedLinesTextItems);
+
+                    //actualLinePositionIdx++;
+                }
+            }
+        }
+        System.out.println();
+
+
+        return combinedSortedLines;
     }
 
     public List<FormattedTextLine> buildParagraphs(TreeMap<BigDecimal, List<TextItem>> sortedLines) {
