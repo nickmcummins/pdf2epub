@@ -31,7 +31,7 @@ public class ParagraphBuilderStrategy {
         BigDecimal[] linePositions = sortedLines.navigableKeySet().toArray(new BigDecimal[0]);
         List<LineRange> lineRanges = new ArrayList<>();
         LineRange currentLineRange = new LineRange(0);
-        TreeMap<BigDecimal, List<TextItem>> combinedSortedLines = new TreeMap<>();
+        TreeMap<BigDecimal, List<TextItem>> mappedSortedLines = new TreeMap<>();
 
         int currentLineNumber = 0;
         while (currentLineNumber <= lineGaps.size()) {
@@ -39,20 +39,13 @@ public class ParagraphBuilderStrategy {
             if (currentLineNumber < lineGaps.size() - 1
                     && Math.abs(lineGaps.get(currentLineNumber) - lineGaps.get(currentLineNumber + 1)) < 0.2) {
                 currentLineRange.setLineGap(new BigDecimal(lineGaps.get(currentLineNumber)).setScale(2, RoundingMode.FLOOR));
-                combinedSortedLines.put(currentLinePosition, combinedSortedLines.get(currentLinePosition));
+                mappedSortedLines.put(currentLinePosition, mappedSortedLines.get(currentLinePosition));
                 currentLineNumber += 1;
 
 
             } else if (currentLineNumber < lineGaps.size() - 2
                     && ((Math.abs(lineGaps.get(currentLineNumber + 2) - (lineGaps.get(currentLineNumber) + lineGaps.get(currentLineNumber + 1))) < 0.2)
                         || (Math.abs(lineGaps.get(currentLineNumber) - (lineGaps.get(currentLineNumber + 1) + lineGaps.get(currentLineNumber + 2)))) < 0.2)) {
-                List<TextItem> firstLine = sortedLines.get(currentLinePosition);
-                BigDecimal secondLinePosition = linePositions[currentLineNumber + 1];
-                BigDecimal thirdLinePosition = linePositions[currentLineNumber + 2];
-
-                List<TextItem> secondLine = sortedLines.get(secondLinePosition);
-                List<TextItem> thirdLine = sortedLines.get(thirdLinePosition);
-                System.out.println();
                 currentLineNumber += 3;
             } else {
                 currentLineRange.setEndLine(currentLineNumber);
@@ -64,36 +57,51 @@ public class ParagraphBuilderStrategy {
 
 
         int actualLinePositionIdx = 0;
-        List<BigDecimal> combinedLinePositions = new ArrayList<>();
+        List<BigDecimal> mappedLinePositions = new ArrayList<>();
         for (LineRange lineRange : lineRanges) {
             if (lineRange.getStartLine() == lineRange.getEndLine()) {
                 BigDecimal linePosition = linePositions[lineRange.getStartLine()];
-                combinedLinePositions.add(linePosition);
-                combinedSortedLines.put(linePosition, sortedLines.get(linePosition));
+                mappedLinePositions.add(linePosition);
+                mappedSortedLines.put(linePosition, sortedLines.get(linePosition));
                 actualLinePositionIdx++;
             } else {
-                for (BigDecimal calculatedLinePosition = linePositions[lineRange.getStartLine()];
-                     Math.abs(calculatedLinePosition.doubleValue() - linePositions[lineRange.getEndLine()].doubleValue()) > 0.2;
-                     calculatedLinePosition = calculatedLinePosition.add(lineRange.getLineGap())) {
-                    List<TextItem> combinedLinesTextItems = new ArrayList<>();
+                BigDecimal calculatedLinePosition = linePositions[lineRange.getStartLine()];
+                while (Math.abs(calculatedLinePosition.doubleValue() - linePositions[lineRange.getEndLine()].doubleValue()) > 0.2
+                        && actualLinePositionIdx != lineRange.getEndLine()) {
                     while (Math.abs(linePositions[actualLinePositionIdx].subtract(calculatedLinePosition).doubleValue()) > 0.2) {
-                        combinedLinesTextItems.addAll(sortedLines.get(linePositions[actualLinePositionIdx]));
                         actualLinePositionIdx++;
                     }
+                    mappedLinePositions.add(linePositions[actualLinePositionIdx]);
+                    calculatedLinePosition = calculatedLinePosition.add(lineRange.getLineGap());
+                    actualLinePositionIdx++;
+                }
 
-                    combinedLinesTextItems.addAll(sortedLines.get(linePositions[actualLinePositionIdx]));
-                    sort(combinedLinesTextItems);
-                    combinedLinePositions.add(linePositions[actualLinePositionIdx]);
-                    combinedSortedLines.put(linePositions[actualLinePositionIdx], combinedLinesTextItems);
-
-                    //actualLinePositionIdx++;
+                if (actualLinePositionIdx == lineRange.getEndLine()) {
+                    mappedLinePositions.add(linePositions[actualLinePositionIdx]);
                 }
             }
         }
+
+        int mappedLinePositionIdx = 0;
+        for (BigDecimal mappedLinePosition : mappedLinePositions)
+            mappedSortedLines.put(mappedLinePosition, new ArrayList<>());
+
+
+        for (BigDecimal unmappedLinePosition : linePositions) {
+            if (Math.abs(unmappedLinePosition.doubleValue() - mappedLinePositions.get(mappedLinePositionIdx).doubleValue()) < 0.2) {
+                if (!mappedSortedLines.containsKey(unmappedLinePosition)) mappedSortedLines.put(unmappedLinePosition, new ArrayList<>());
+                mappedSortedLines.get(unmappedLinePosition).addAll(sortedLines.get(unmappedLinePosition));
+                mappedLinePositionIdx++;
+            } else {
+                    mappedSortedLines.get(mappedLinePositions.get(mappedLinePositionIdx)).addAll(sortedLines.get(unmappedLinePosition));
+            }
+        }
+
+        for (List<TextItem> lineItems : mappedSortedLines.values())
+            sort(lineItems);
+
         System.out.println();
-
-
-        return combinedSortedLines;
+        return mappedSortedLines;
     }
 
     public List<FormattedTextLine> buildParagraphs(TreeMap<BigDecimal, List<TextItem>> sortedLines) {
@@ -158,14 +166,17 @@ public class ParagraphBuilderStrategy {
             double currentLineMaxX = maxXs.get(lineY).doubleValue();
             boolean lineMaxXImpliesNewParagraph = Math.abs(currentLineMaxX - averageMaxX) > 30;
             boolean isSpecialCharacter = !Character.isLetter(lastTextItem.getText().charAt(0));
-            if (lineTextItems.size() > 1)
+            if (lineTextItems.size() > 1) {
+                if (lastTextItem.getX().doubleValue() - lineTextItems.get(lineTextItems.size() - 2).getXEnd() > 1.0)
+                    currentLineCombiner.append(" ");
                 currentLineCombiner.append(lastTextItem.getText());
-
+            }
             if (lineMaxXImpliesNewParagraph && !isSpecialCharacter) {
                 combinedParagraphLines.add(new FormattedTextLine(currentLineCombiner.toString(), currentFontFamily, currentFontSize));
                 currentLineCombiner = new StringBuilder();
-            } else
+            } else {
                 currentLineCombiner.append(" ");
+            }
         }
         combinedParagraphLines.add(new FormattedTextLine(currentLineCombiner.toString(), currentFontFamily, currentFontSize));
 
