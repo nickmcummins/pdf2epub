@@ -5,11 +5,11 @@ import net.nickmcummins.pdf.page.FormattedTextLine;
 import net.nickmcummins.pdf.page.TextItem;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.util.Collections.sort;
+import static net.nickmcummins.pdf.paragraph.LineRangeIdentifier.identifyLineRanges;
 
 public class ParagraphBuilderStrategy {
     private static final String UNSET_FONT_FAMILY = "";
@@ -17,44 +17,10 @@ public class ParagraphBuilderStrategy {
 
 
     private TreeMap<BigDecimal, List<TextItem>> moveInterlineTextItems(TreeMap<BigDecimal, List<TextItem>> sortedLines) {
-        List<Double> lineGaps = new ArrayList<>();
-
-        BigDecimal previousLineY = sortedLines.firstKey();
-
-        for (BigDecimal currentLineY : sortedLines.navigableKeySet()) {
-            if (currentLineY.equals(previousLineY)) continue;
-            double gapFromPrevious = currentLineY.doubleValue() - previousLineY.doubleValue();
-            lineGaps.add(gapFromPrevious);
-            previousLineY = currentLineY;
-        }
+        List<LineRange> lineRanges = identifyLineRanges(sortedLines);
 
         BigDecimal[] linePositions = sortedLines.navigableKeySet().toArray(new BigDecimal[0]);
-        List<LineRange> lineRanges = new ArrayList<>();
-        LineRange currentLineRange = new LineRange(0);
         TreeMap<BigDecimal, List<TextItem>> mappedSortedLines = new TreeMap<>();
-
-        int currentLineNumber = 0;
-        while (currentLineNumber <= lineGaps.size()) {
-            BigDecimal currentLinePosition = linePositions[currentLineNumber];
-            if (currentLineNumber < lineGaps.size() - 1
-                    && Math.abs(lineGaps.get(currentLineNumber) - lineGaps.get(currentLineNumber + 1)) < 0.2) {
-                currentLineRange.setLineGap(new BigDecimal(lineGaps.get(currentLineNumber)).setScale(2, RoundingMode.FLOOR));
-                mappedSortedLines.put(currentLinePosition, mappedSortedLines.get(currentLinePosition));
-                currentLineNumber += 1;
-
-
-            } else if (currentLineNumber < lineGaps.size() - 2
-                    && ((Math.abs(lineGaps.get(currentLineNumber + 2) - (lineGaps.get(currentLineNumber) + lineGaps.get(currentLineNumber + 1))) < 0.2)
-                        || (Math.abs(lineGaps.get(currentLineNumber) - (lineGaps.get(currentLineNumber + 1) + lineGaps.get(currentLineNumber + 2)))) < 0.2)) {
-                currentLineNumber += 3;
-            } else {
-                currentLineRange.setEndLine(currentLineNumber);
-                lineRanges.add(currentLineRange);
-                currentLineRange = new LineRange(currentLineNumber + 1);
-                currentLineNumber += 1;
-            }
-        }
-
 
         int actualLinePositionIdx = 0;
         List<BigDecimal> mappedLinePositions = new ArrayList<>();
@@ -78,6 +44,8 @@ public class ParagraphBuilderStrategy {
 
                 if (actualLinePositionIdx == lineRange.getEndLine()) {
                     mappedLinePositions.add(linePositions[actualLinePositionIdx]);
+                    actualLinePositionIdx++;
+
                 }
             }
         }
