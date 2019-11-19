@@ -27,7 +27,7 @@ public class LineRangeIdentifier {
         LineRange currentLineRange = new LineRange(0);
 
         int currentLineNumber = 0;
-        while (currentLineNumber <= lineGaps.size()) {
+        while (currentLineNumber < lineGaps.size()) {
             if (currentLineNumber < lineGaps.size() - 1
                     && Math.abs(lineGaps.get(currentLineNumber) - lineGaps.get(currentLineNumber + 1)) < 0.2) {
                 currentLineRange.setLineGap(new BigDecimal(lineGaps.get(currentLineNumber)).setScale(2, RoundingMode.FLOOR));
